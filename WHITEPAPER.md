@@ -1,25 +1,25 @@
-# Architecture & Design Whitepaper: Pi WebUI
+# Tài Liệu Kiến Trúc & Thiết Kế Hệ Thống: Pi WebUI
 
-## 1. Executive Summary
+## 1. Tóm Tắt Dự Án
 
-Headless Raspberry Pi administration often requires users to choose between complex command-line interfaces (SSH) or heavy, resource-intensive control panels (such as Webmin, Cockpit, or cloud-tethered dashboards). 
+Việc quản lý các thiết bị Raspberry Pi chạy chế độ không màn hình (headless) thường đặt người dùng vào hai sự lựa chọn: hoặc sử dụng dòng lệnh phức tạp (SSH), hoặc cài đặt các bảng điều khiển cồng kềnh, tiêu tốn nhiều tài nguyên hệ thống (như Webmin, Cockpit) hoặc phụ thuộc vào các dịch vụ đám mây trung gian.
 
-**Pi WebUI** introduces a self-hosted, lightweight, and modern alternative. Inspired by the clean, desktop-like dashboard of **CasaOS**, it targets high visual refinement while running under tight resource budgets (less than 256MB RAM). It strictly follows an offline-first philosophy, utilizing local assets to avoid external cloud dependencies and CDNs.
+**Pi WebUI** mang đến một giải pháp thay thế tự lưu trữ (self-hosted), siêu nhẹ và hiện đại. Được truyền cảm hứng từ giao diện quản lý dạng desktop trực quan của **CasaOS**, dự án hướng tới sự hoàn mỹ về mặt thị giác nhưng vẫn hoạt động mượt mà trong giới hạn tài nguyên cực kỳ nghiêm ngặt (dưới 256MB RAM). Hệ thống hoạt động theo triết lý ngoại tuyến hoàn toàn (offline-first), loại bỏ hoàn toàn việc sử dụng CDN hoặc các kết nối đám mây bên ngoài để đảm bảo tính riêng tư và tốc độ tối đa.
 
-This whitepaper details the architectural design, security mechanisms, hardware optimization strategies, and communication protocols implemented in Pi WebUI.
+Tài liệu này trình bày chi tiết về thiết kế kiến trúc, mô hình bảo mật, các phương án tối ưu hóa phần cứng và các giao thức truyền thông được áp dụng trong Pi WebUI.
 
 ---
 
-## 2. Architectural Design & Philosophy
+## 2. Kiến Trúc Hệ Thống & Triết Lý Thiết Kế
 
 ```
   ┌────────────────────────────────────────────────────────┐
-  │                   Web Browser (Client)                  │
+  │                 Trình Duyệt Web (Client)                │
   │  ┌──────────────────┐ ┌──────────┐ ┌────────────────┐  │
   │  │ Vanilla JS / CSS │ │ xterm.js │ │ EventSource/WS │  │
   │  └────────┬─────────┘ └────┬─────┘ └───────▲────────┘  │
   └───────────┼────────────────┼───────────────┼───────────┘
-              │ HTTP Requests  │ WebSocket     │ SSE / WS
+              │ Yêu cầu HTTP   │ WebSocket     │ SSE / WS
               │ (APIs / files) │ (Terminal)    │ (Telemetry)
   ┌───────────┼────────────────┼───────────────┼───────────┐
   │           ▼                ▼               │           │
@@ -29,88 +29,74 @@ This whitepaper details the architectural design, security mechanisms, hardware 
   │       └──────┬──────────────────────┬───────┘          │
   │              │                      │                  │
   │              ▼                      ▼                  │
-  │       SQLite 3 (WAL)         System Services           │
-  │       (Data Persistence)     (procfs, systemctl, PTY)  │
+  │       SQLite 3 (WAL)         Dịch Vụ Hệ Thống          │
+  │       (Lưu trữ dữ liệu)      (procfs, systemctl, PTY)  │
   │                                                        │
-  │                   Raspberry Pi Hardware                │
+  │                   Phần Cứng Raspberry Pi               │
   └────────────────────────────────────────────────────────┘
 ```
 
-The system is split into two cleanly separated layers:
-1. **Frontend Dashboard:** A single-page application (SPA) built using native HTML5, modern CSS Variables (Design Tokens), and Vanilla JavaScript (ES Modules). No build tools, preprocessors, or node dependencies are required.
-2. **Backend Daemon:** An asynchronous Python service powered by **FastAPI** and **Uvicorn**, serving as the system control agent. It interfaces directly with Linux kernel endpoints, systemd, and virtual PTY terminals.
+Hệ thống được chia làm hai lớp tách biệt rõ ràng:
+1. **Frontend Dashboard:** Ứng dụng đơn trang (SPA) xây dựng bằng HTML5 thuần, CSS Variables (Design Tokens) để quản lý giao diện đồng bộ, và Javascript ES Modules. Không có công cụ build, không có bước đóng gói trung gian hay thư viện cồng kềnh, giúp tải trang ngay lập tức.
+2. **Backend Daemon:** Dịch vụ Python bất đồng bộ chạy trên nền tảng **FastAPI** và máy chủ **Uvicorn**, đóng vai trò là tác nhân điều khiển hệ thống. Backend trực tiếp giao tiếp với các tệp tin hệ thống Linux kernel (`/proc`, `/sys`), các API của dịch vụ systemd và cổng terminal ảo PTY.
 
-### Design Principles:
-* **Zero Cloud Lock-in:** The device should remain 100% functional without internet connectivity.
-* **Low-overhead Telemetry:** System monitoring must not introduce CPU overhead or wear down the boot storage device.
-* **Privilege Minimization:** The backend service runs under a standard user account (`admin` or `pi`) rather than `root`, invoking elevated permissions only when strictly necessary.
-
----
-
-## 3. Communication Model & Telemetry
-
-### 3.1. Telemetry Stream (Server-Sent Events)
-Instead of relying on heavy HTTP polling (which floods the network and spikes CPU cycles), Pi WebUI utilizes a uni-directional **Server-Sent Events (SSE)** channel to stream telemetry data.
-* **Uptime, CPU Load, Temperature, RAM, Disk, and Network Interface Stats** are collected at the backend level via `psutil` and direct `/proc` / `/sys` queries.
-* These metrics are serialized to JSON and broadcasted to listening clients via an `EventSource` stream every 1–2 seconds.
-* This architecture maintains a single persistent TCP connection, saving energy and preserving network cycles on low-power devices.
-
-### 3.2. Real-Time Terminal (WebSockets + PTY)
-To support a fully functional, interactive terminal over the web:
-* The frontend uses **xterm.js** to handle terminal emulation, layout rendering, and keystroke capture.
-* Communication is handled via full-duplex **WebSockets** (`/ws/terminal`).
-* On the backend, Python's native `os.forkpty()` creates a pseudo-terminal (PTY) running `bash` under the host user shell.
-* Bidirectional asynchronous loops read data from the PTY and pipe it to the WebSocket, and vice-versa, offering near-zero latency.
+### Các Nguyên Tắc Thiết Kế:
+* **Không Phụ Thuộc Đám Mây:** Thiết bị hoạt động bình thường kể cả khi không có kết nối internet toàn cầu.
+* **Thu Thập Thông Số Tối Giản:** Tác vụ giám sát hệ thống không được gây quá tải CPU hay tăng chu kỳ ghi vào bộ nhớ flash (thẻ SD).
+* **Giảm Thiểu Đặc Quyền:** Dịch vụ backend chạy dưới tài khoản người dùng thông thường (`admin` hoặc `pi`), chỉ yêu cầu quyền hạn root thông qua cơ chế sudo giới hạn khi thực sự cần thiết.
 
 ---
 
-## 4. Hardware Optimizations & SD Card Wear Mitigation
+## 3. Mô Hình Giao Tiếp & Thu Thập Thông Số
 
-A primary failure vector for Raspberry Pi projects is storage corruption due to repetitive write cycles on SD cards. Pi WebUI implements architectural defenses:
+### 3.1. Truyền Tải Dữ Liệu Giám Sát (Server-Sent Events)
+Để tránh việc sử dụng cơ chế HTTP Polling liên tục (gây lãng phí băng thông mạng nội bộ và tăng tải CPU), Pi WebUI sử dụng kênh truyền tải dữ liệu một chiều **Server-Sent Events (SSE)**.
+* Các chỉ số về CPU, Xung nhịp, Nhiệt độ, RAM, Đĩa và Trạng thái mạng được backend thu thập thông qua thư viện `psutil` và đọc trực tiếp từ các file `/sys` hoặc `/proc`.
+* Các thông số này được định dạng thành JSON và đẩy liên tục đến client qua luồng `EventSource` sau mỗi 1 đến 2 giây.
+* Mô hình này duy trì một kết nối TCP duy nhất, giảm thiểu tối đa năng lượng tiêu thụ của chip ARM trên Pi.
+
+### 3.2. Cửa Sổ Terminal Trực Tuyến (WebSockets + PTY)
+Để hỗ trợ một cửa sổ dòng lệnh toàn diện ngay trên trình duyệt:
+* Frontend sử dụng thư viện chuyên dụng **xterm.js** để giả lập terminal, xử lý hiển thị và bắt các sự kiện gõ phím.
+* Việc giao tiếp hai chiều thời gian thực được đảm nhận bởi **WebSockets** thông qua endpoint `/ws/terminal`.
+* Ở phía backend, Python gọi hàm hệ thống `os.forkpty()` để sinh ra một terminal ảo (PTY) chạy shell `bash` dưới danh nghĩa tài khoản của người dùng.
+* Các luồng xử lý bất đồng bộ liên tục đọc/ghi dữ liệu qua lại giữa PTY và WebSocket với độ trễ cực thấp.
+
+---
+
+## 4. Tối Ưu Phần Cứng & Hạn Chế Hao Mòn Thẻ Nhớ SD
+
+Một trong những nguyên nhân phổ biến nhất khiến Raspberry Pi bị hỏng hệ điều hành là do thẻ nhớ SD bị hỏng (corrupted) vì tần suất ghi dữ liệu quá lớn. Pi WebUI tích hợp sẵn các giải pháp kiến trúc để bảo vệ phần cứng:
 
 ### 4.1. SQLite Write-Ahead Logging (WAL)
-Standard SQLite transactions write to the main database file and rollback journal, creating heavy synchronous write IO. Pi WebUI overrides this behavior:
-* **WAL Mode enabled:** Writes are appended to a separate `.log` file, allowing concurrent reads and sequential, non-blocking disk operations.
-* **PRAGMA synchronous = NORMAL:** The database syncs checkpoints to disk instead of syncing on every single transaction, reducing physical SD card wear by orders of magnitude.
-* **PRAGMA cache_size = -4000:** Cache size is set to 4MB in RAM, keeping read operations local to memory rather than querying the disk.
+Các giao dịch ghi tiêu chuẩn của SQLite tạo ra rất nhiều thao tác đồng bộ trực tiếp lên tệp tin dữ liệu chính. Pi WebUI cấu hình lại hoạt động của SQLite:
+* **Bật chế độ WAL:** Các thao tác ghi được ghi nối tiếp vào một tệp nhật ký phụ `.log` riêng biệt, cho phép đọc và ghi diễn ra song song mà không khóa lẫn nhau.
+* **Cấu hình PRAGMA synchronous = NORMAL:** Database chỉ ghi đồng bộ xuống đĩa vật lý tại các điểm kiểm tra (checkpoint) thay vì sau mỗi giao dịch nhỏ. Điều này giúp giảm số lần ghi vật lý lên thẻ SD đi hàng trăm lần.
+* **Cấu hình PRAGMA cache_size = -4000:** Tăng dung lượng cache lưu trữ dữ liệu tạm thời lên 4MB trong RAM, giúp các tác vụ đọc dữ liệu hạn chế tối đa việc truy xuất trực tiếp vào thẻ nhớ.
 
-### 4.2. Volatile Operations & RAM Mounting
-System configuration changes require file writes. To prevent flash memory degradation:
-* **Log redirection:** WebUI system logs are directed to `stdout` and handled by `systemd-journald`, which is configured with `Storage=volatile` to store logs solely in RAM.
-* **Temporary Directories:** It is strongly recommended to mount `/tmp` and `/var/log` as `tmpfs` RAM-disks.
-* **Atomic Writes:** All configuration writes to disk (such as network settings) write first to a temporary file in the target directory, flush buffers to physical disk via `os.fsync()`, and perform an atomic `os.rename()`. This guarantees the filesystem never holds partially written or corrupt files if power fails midway.
+### 4.2. Ghi Tệp Nguyên Tử (Atomic Writes) & Ghi Log Trạm
+* **Ghi Log trên RAM:** Nhật ký hoạt động của ứng dụng được đẩy trực tiếp ra `stdout` để hệ thống `systemd-journald` tiếp nhận. Trong cấu hình hệ thống, file log được chuyển sang chế độ `volatile` để chỉ lưu trữ tạm thời trong RAM thay vì ghi xuống thẻ SD.
+* **Tác vụ ghi tệp an toàn:** Khi chỉnh sửa tệp tin hệ thống (như cấu hình mạng, quản lý file), backend sẽ ghi ra một file tạm trước, đồng bộ dữ liệu bằng `os.fsync()`, sau đó dùng lệnh đổi tên `os.rename()` để ghi đè tệp tin gốc. Trên nhân Linux, `rename` là một thao tác nguyên tử (atomic operation), đảm bảo không bao giờ xảy ra tình trạng tệp tin bị hỏng nửa chừng khi mất điện đột ngột.
 
 ---
 
-## 5. Security Architecture
+## 5. Kiến Trúc Bảo Mật
 
-### 5.1. Non-Root Execution Daemon
-Running a web panel as `root` exposes the system to catastrophic remote code execution (RCE) vulnerabilities.
-* The Pi WebUI daemon runs as a restricted standard user (`pi` or `admin`).
-* Restricting commands: The installer configures a custom sudoers file (`/etc/sudoers.d/piwebui`) that explicitly permits passwordless sudo access *only* to a pre-defined set of system operations:
+### 5.1. Dịch Vụ Không Chạy Quyền Root
+Chạy dịch vụ web điều khiển hệ thống bằng quyền root là một lỗ hổng bảo mật nghiêm trọng.
+* Pi WebUI daemon chạy dưới quyền user thông thường (`admin` hoặc `pi`).
+* Để thực hiện các tác vụ hệ thống (như điều khiển dịch vụ systemctl, khởi động lại máy), script cài đặt tạo ra một file cấu hình sudoers chuyên biệt tại `/etc/sudoers.d/piwebui`.
+* File cấu hình này chỉ cho phép user chạy các lệnh chỉ định cụ thể không cần mật khẩu và tuyệt đối không cấp quyền sudo toàn phần:
   ```bash
   admin ALL=(ALL) NOPASSWD: /bin/systemctl start *
   admin ALL=(ALL) NOPASSWD: /bin/systemctl stop *
   admin ALL=(ALL) NOPASSWD: /bin/systemctl restart *
   admin ALL=(ALL) NOPASSWD: /sbin/reboot
   admin ALL=(ALL) NOPASSWD: /sbin/shutdown
-  admin ALL=(ALL) NOPASSWD: /usr/bin/wg show
   ```
 
-### 5.2. File Manager Path Isolation
-The File Manager API prevents directory traversal and restricts access to sensitive directories:
-* A configuration value `FILE_MANAGER_ROOT` sets the boundary (e.g., `/home/admin`).
-* Path normalization via Python's `pathlib.Path` checks that the requested path is a strict child of the root directory.
-* Direct access to system files like `/etc/shadow` or `/etc/sudoers` is blocked at the routing layer.
-
----
-
-## 6. Remote Accessibility Model
-
-Rather than utilizing proprietary third-party relay clouds (e.g. Tailscale, ngrok, Cloudflare Tunnels) which route private data through external servers and impose bandwidth or API limits, Pi WebUI utilizes a self-hosted tunnel:
-
-1. **DuckDNS:** A lightweight dynamic DNS client runs as a local cron job, resolving home IP changes to a free subdomain (e.g., `mypi.duckdns.org`).
-2. **WireGuard VPN:** A secure, kernel-level VPN server runs on the Pi (UDP Port 51820). The admin imports a mobile client config. Once toggled on:
-   - Traffic to the Pi's internal subnet (`10.8.0.0/24`) is routed securely.
-   - The admin accesses the WebUI securely at `http://10.8.0.1:8080` without exposing port 8080 to the public web.
-   - Security is guaranteed by modern ChaCha20-Poly1305 cryptographic handshakes.
+### 5.2. Cô Lập Thư Mục Quản Lý File
+Để tránh lỗ hổng duyệt thư mục ngược dòng (directory traversal):
+* Giá trị cấu hình `FILE_MANAGER_ROOT` thiết lập giới hạn cho phép (ví dụ `/home/admin`).
+* Hệ thống sử dụng thư viện `pathlib.Path` để chuẩn hóa đường dẫn và kiểm tra nghiêm ngặt xem đường dẫn yêu cầu có nằm trong phạm vi thư mục gốc hay không.
+* Chặn hoàn toàn việc truy cập trực tiếp đến các file hệ thống nhạy cảm như `/etc/shadow` hay `/etc/sudoers`.

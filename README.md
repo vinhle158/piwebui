@@ -5,104 +5,103 @@
 [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20OS-red.svg)](https://www.raspberrypi.com/software/)
 [![Aesthetic](https://img.shields.io/badge/design-CasaOS%20Inspired-brightgreen.svg)]()
 
-A lightweight, modern, secure, and self-hosted control panel designed specifically for Raspberry Pi. Inspired by the clean, desktop-like dashboard layout of **CasaOS**, Pi WebUI provides a premium web interface to monitor hardware stats, manage services, browse files, run interactive terminals, and configure secure VPN access without relying on any external cloud platforms (fully offline-first).
+Một bảng điều khiển gọn nhẹ, hiện đại, an toàn và tự lưu trữ (self-hosted) được thiết kế dành riêng cho Raspberry Pi. Được truyền cảm hứng từ giao diện desktop tinh tế của **CasaOS**, Pi WebUI cung cấp giao diện web cao cấp giúp giám sát thông số phần cứng, quản lý dịch vụ hệ thống, duyệt tập tin, và chạy terminal tương tác trực tiếp mà không cần phụ thuộc vào bất kỳ dịch vụ cloud trung gian nào (hoàn toàn offline-first).
 
 ---
 
-## 🖥️ Preview & Design Aesthetics
-Pi WebUI is built with a premium dark-mode aesthetic featuring:
-* **Glassmorphism UI:** Translucent cards, subtle blurs, and vibrant background glows.
-* **Responsive Layout:** Adaptive desktop grid and mobile-friendly layouts.
-* **Micro-animations:** Smooth hover transitions and active status glows.
-* **System Widgets:** Live-updating circular progress meters for CPU, Memory, Disk, and Temperature.
+## 🖥️ Giao Diện & Triết Lý Thiết Kế
+Pi WebUI được xây dựng với ngôn ngữ thiết kế tối giản (dark-mode) sang trọng, bao gồm:
+* **Giao diện Glassmorphism:** Các thẻ chứa thông tin bán trong suốt, hiệu ứng mờ nền tinh tế và ánh sáng phát quang hiện đại.
+* **Tương thích đa thiết bị:** Tự động tối ưu hóa hiển thị trên cả màn hình máy tính lớn và thiết bị di động.
+* **Hiệu ứng mượt mà (Micro-animations):** Các tương tác hover nhẹ nhàng, đèn trạng thái nhấp nháy sinh động.
+* **Widgets Thông Số:** Các vòng đo tiến trình cập nhật trực tiếp cho CPU, RAM, dung lượng đĩa và nhiệt độ hệ thống.
 
 ---
 
-## 🚀 Key Features
+## 🚀 Các Tính Năng Nổi Bật
 
-* **Real-time System Monitoring:** Live hardware stats (CPU load, clock speed, core temperature, RAM usage, disk space, and network interface statuses) streamed efficiently via Server-Sent Events (SSE).
-* **Service Manager:** Safely start, stop, restart, and monitor core systemd services (e.g., SSH, Nginx, WireGuard, Docker) with real-time status updates.
-* **Interactive Web Terminal:** Full-featured in-browser terminal powered by **xterm.js** and WebSockets, enabling remote shell access without opening port 22 to the public internet.
-* **File Manager:** Fast, native file explorer to browse, download, edit, and upload files. Features **atomic write operations** to prevent filesystem corruption during sudden power losses.
-* **Offline-first Accessibility:** Completely independent of external CDNs. All scripts, fonts (Inter), and icons (Lucide SVG) are served locally.
-* **Secure Remote Access:** Built-in support guidelines for WireGuard VPN + DuckDNS. Securely connect your mobile device or external PC directly to your home network.
+* **Giám Sát Hệ Thống Thời Gian Thực:** Truyền tải trực tiếp các thông số phần cứng (tải CPU, xung nhịp, nhiệt độ CPU, dung lượng RAM, dung lượng ổ đĩa và trạng thái các cổng mạng) thông qua Server-Sent Events (SSE) cực kỳ tiết kiệm tài nguyên.
+* **Quản Lý Dịch Vụ Hệ Thống:** Bật, tắt, khởi động lại và theo dõi trạng thái các dịch vụ systemd cốt lõi (như SSH, Nginx, Docker, v.v.) trực quan trên web.
+* **Terminal Tương Tác Trực Tuyến:** Tích hợp cửa sổ dòng lệnh trực tiếp trên trình duyệt sử dụng công nghệ **xterm.js** và WebSockets, cho phép bạn thao tác SSH từ xa thông qua giao diện Web mà không cần mở port 22 ra ngoài.
+* **Quản Lý Tập Tin (File Manager):** Duyệt thư mục, tải xuống, chỉnh sửa và tải tệp tin lên nhanh chóng. Sử dụng cơ chế **ghi tệp tin nguyên tử (atomic write)** để đảm bảo an toàn tuyệt đối, tránh hỏng hệ thống khi mất điện đột ngột.
+* **Hoàn Toàn Offline (Offline-first):** Không sử dụng bất kỳ thư viện hay CDN bên ngoài nào. Toàn bộ mã nguồn, font chữ (Inter), biểu tượng (Lucide SVG) đều được lưu trữ trực tiếp trên thiết bị Pi của bạn.
 
 ---
 
-## 🛠️ Tech Stack & Rationale
+## 🛠️ Công Nghệ Sử Dụng
 
-| Layer | Technology | Rationale |
+| Thành Phần | Công Nghệ | Lý Do Chọn Lựa |
 | :--- | :--- | :--- |
-| **Backend** | Python 3.11+ / FastAPI | Native Raspberry Pi OS support, low memory footprint, native GPIO access, and async WebSockets. |
-| **Frontend** | HTML5, Vanilla CSS, JS (ES Modules) | Zero build steps (no npm/vite builds required on the Pi), blazing fast loading, and offline accessibility. |
-| **Database** | SQLite 3 (WAL Mode) | Serverless, zero daemon overhead, and optimized write safety. |
-| **Communication** | SSE (Server-Sent Events) & WebSockets | SSE for resource-efficient monitoring telemetry; WebSockets for interactive shell communications. |
-| **Process Manager** | systemd | Native Linux service management with automatic crash restarts and resource limiting. |
+| **Backend** | Python 3.11+ / FastAPI | Hỗ trợ tối ưu trên Raspberry Pi, sử dụng ít tài nguyên RAM, tích hợp tốt với các API hệ thống và WebSockets. |
+| **Frontend** | HTML5, Vanilla CSS, JS (ES Modules) | Không cần bước đóng gói (no build step), nhẹ nhất có thể và hoạt động hoàn hảo khi offline. |
+| **Database** | SQLite 3 (WAL Mode) | Không cần cài đặt daemon độc lập, tiết kiệm tài nguyên và bảo vệ toàn vẹn dữ liệu khi mất điện. |
+| **Giao Tiếp** | SSE (Server-Sent Events) & WebSockets | Dùng SSE cho việc cập nhật thông số hệ thống để tiết kiệm pin/CPU; dùng WebSockets cho terminal hai chiều. |
+| **Quản Lý Tiến Trình** | systemd | Dịch vụ hệ thống Linux tiêu chuẩn giúp tự khởi động lại khi crash và giới hạn tài nguyên tối đa cho ứng dụng. |
 
 ---
 
-## 📦 Quick Start & Deployment
+## 📦 Hướng Dẫn Cài Đặt & Triển Khai
 
-### 1. Prerequisites
-Ensure you are running **Raspberry Pi OS 11 (Bullseye)** or **12 (Bookworm)**.
+### 1. Yêu cầu hệ thống
+Đảm bảo thiết bị của bạn đang chạy hệ điều hành **Raspberry Pi OS 11 (Bullseye)** hoặc **12 (Bookworm)**.
 
-### 2. Copy Code & Setup Repository
-On your Raspberry Pi:
+### 2. Tải mã nguồn về Pi
+Chạy lệnh sau trên terminal của Pi:
 ```bash
 git clone https://github.com/vinhle158/piwebui.git ~/piwebui
 cd ~/piwebui
 ```
 
-### 3. Download Offline Assets
-Fetch the required local web assets (fonts and styling assets) so the UI works offline:
+### 3. Tải các tài nguyên Offline (Fonts & Icons)
+Chạy script để tải các tài nguyên giao diện về lưu trữ nội bộ:
 ```bash
 python3 scripts/download_assets.py
 ```
 
-### 4. Create Environment Configuration
-Initialize the environment configuration:
+### 4. Tạo cấu hình môi trường
+Khởi tạo cấu hình môi trường:
 ```bash
 cp .env.example backend/.env
 ```
-Edit `backend/.env` if you need to adjust directories or allowed services:
+Chỉnh sửa file `backend/.env` nếu bạn muốn thay đổi thư mục quản lý tập tin hoặc danh sách dịch vụ:
 ```ini
 HOST=0.0.0.0
 PORT=8080
 DB_PATH=/var/lib/piwebui/data.db
-ALLOWED_SERVICES=piwebui,nginx,ssh,bluetooth,cron,networking,wg-quick@wg0
-FILE_MANAGER_ROOT=/home/admin   # Replace with your home directory
+ALLOWED_SERVICES=piwebui,nginx,ssh,bluetooth,cron,networking
+FILE_MANAGER_ROOT=/home/admin   # Đổi thành thư mục home của bạn
 ```
 
-### 5. Run the Automated Installer
-Make the installer executable and run it (run as your standard user, **do NOT use `sudo` directly**):
+### 5. Chạy script cài đặt tự động
+Cấp quyền thực thi và chạy script (chạy với quyền user thường, **KHÔNG dùng `sudo` trực tiếp**):
 ```bash
 chmod +x scripts/install.sh
 ./scripts/install.sh
 ```
-*The script will automatically configure package dependencies, initialize a python virtual environment (`venv`), copy systemd service configurations, register the service to start on boot, and dynamically configure passwordless sudo privileges for selected commands.*
+*Script sẽ tự động cài các gói phụ thuộc hệ thống, tạo môi trường ảo Python (`venv`), cấu hình dịch vụ systemd và phân quyền sudo không mật khẩu cho một số lệnh hệ thống nhất định.*
 
 ---
 
-## ⚡ Pi-Specific Optimizations (SD Card Protection)
+## ⚡ Các Tối Ưu Hóa Dành Riêng Cho Raspberry Pi
 
-Raspberry Pi SD cards can degrade quickly under constant write loads. Pi WebUI implements strict hardware-saving precautions:
+Thẻ nhớ SD của Pi rất dễ bị giảm tuổi thọ hoặc hỏng do tác vụ ghi dữ liệu liên tục. Pi WebUI áp dụng các giải pháp bảo vệ tối đa:
 
-1. **SQLite WAL Mode:** Write-Ahead Logging is used with `PRAGMA synchronous=NORMAL` to batch writes and prevent filesystem corruption on power cuts.
-2. **Volatile Logging:** System logs are configured to reside in RAM (`tmpfs`) instead of the SD card.
-3. **RAM Mounting:** To apply this, mount write-intensive paths to RAM by adding the following to `/etc/fstab`:
+1. **SQLite WAL Mode:** Sử dụng cơ chế ghi nhật ký Write-Ahead Logging cùng cấu hình `PRAGMA synchronous=NORMAL` để gộp các tác vụ ghi đè và ngăn ngừa lỗi tệp tin khi mất điện đột ngột.
+2. **Volatile Logging (Ghi log vào RAM):** Nhật ký hệ thống được ghi ra `stdout` để hệ thống `systemd-journald` thu thập và lưu trữ trực tiếp trong RAM.
+3. **Mount tmpfs:** Khuyên dùng cấu hình đưa các thư mục ghi tạm thời vào RAM bằng cách thêm các dòng sau vào file `/etc/fstab`:
    ```ini
    tmpfs   /tmp              tmpfs  defaults,noatime,nosuid,size=64m     0 0
    tmpfs   /var/log          tmpfs  defaults,noatime,nosuid,size=32m     0 0
    tmpfs   /var/tmp          tmpfs  defaults,noatime,nosuid,size=16m     0 0
    ```
-4. **Service Resource Limits:** The `piwebui.service` is restricted to a maximum of `256MB` RAM and `80%` CPU quota to ensure system stability.
+4. **Giới hạn tài nguyên dịch vụ:** Dịch vụ `piwebui.service` được giới hạn tối đa `256MB` RAM và `80%` CPU để luôn đảm bảo hệ điều hành Pi chạy mượt mà, không bị tràn RAM (OOM).
 
 ---
 
-## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 📄 Giấy Phép
+Dự án được phân phối dưới giấy phép MIT License - xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
 ---
 
-## 👥 Contributing
-Contributions are welcome! Please feel free to submit issues, pull requests, or suggestions to make Pi WebUI even better.
+## 👥 Tham Gia Đóng Góp
+Mọi đóng góp, báo lỗi hoặc đề xuất tính năng mới đều được chào đón! Hãy gửi Issue hoặc Pull Request trên trang GitHub của dự án.
