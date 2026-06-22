@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi WebUI — Bảng điều khiển</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <!-- Local font loading -->
+    <link rel="stylesheet" href="assets/fonts/inter.css">
+</head>
+<body>
+    <!-- Desktop Wallpaper Background -->
+    <div class="desktop-wallpaper"></div>
+
+    <div id="app">
+        <!-- Topbar Header -->
+        <header class="desktop-topbar" role="banner">
+            <div class="topbar-brand">
+                <svg class="brand-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <use href="assets/icons/icons.svg#activity"></use>
+                </svg>
+                <span class="brand-name">Pi WebUI</span>
+            </div>
+            
+            <div class="topbar-right">
+                <div id="topbar-conn-status" class="topbar-status">
+                    <span class="status-dot status-dot--inactive" id="conn-dot"></span>
+                    <span id="conn-text">Khởi tạo...</span>
+                </div>
+                <div id="topbar-clock" class="topbar-clock">00:00</div>
+            </div>
+        </header>
+
+        <!-- Desktop Body Workspace -->
+        <div class="desktop-body">
+            <!-- Left Panel: Widgets -->
+            <aside class="widget-panel" aria-label="Widget Panel">
+                <!-- Clock and Greeting Widget -->
+                <div class="widget-card widget-card--clock">
+                    <div class="clock-time" id="widget-clock-time">00:00:00</div>
+                    <div class="clock-date" id="widget-clock-date">Đang tải...</div>
+                    <div class="clock-greet" id="widget-clock-greet">Xin chào, Raspberry Pi!</div>
+                </div>
+
+                <!-- System Status circular gauges widget -->
+                <div class="widget-card widget-card--resources">
+                    <h3 class="widget-card__title">Tài nguyên hệ thống</h3>
+                    
+                    <div class="gauge-grid">
+                        <!-- CPU Usage -->
+                        <div class="gauge-item">
+                            <div class="gauge-circle" id="gauge-cpu" style="--progress: 0;">
+                                <svg class="progress-ring" width="70" height="70">
+                                    <circle class="progress-ring__bg" stroke="rgba(255,255,255,0.06)" stroke-width="5" fill="transparent" r="28" cx="35" cy="35"/>
+                                    <circle class="progress-ring__circle" id="gauge-cpu-circle" stroke="var(--cpu-color)" stroke-width="5" fill="transparent" r="28" cx="35" cy="35"/>
+                                </svg>
+                                <span class="gauge-value" id="gauge-cpu-val">0%</span>
+                            </div>
+                            <span class="gauge-label">CPU</span>
+                        </div>
+
+                        <!-- RAM Usage -->
+                        <div class="gauge-item">
+                            <div class="gauge-circle" id="gauge-ram" style="--progress: 0;">
+                                <svg class="progress-ring" width="70" height="70">
+                                    <circle class="progress-ring__bg" stroke="rgba(255,255,255,0.06)" stroke-width="5" fill="transparent" r="28" cx="35" cy="35"/>
+                                    <circle class="progress-ring__circle" id="gauge-ram-circle" stroke="var(--ram-color)" stroke-width="5" fill="transparent" r="28" cx="35" cy="35"/>
+                                </svg>
+                                <span class="gauge-value" id="gauge-ram-val">0%</span>
+                            </div>
+                            <span class="gauge-label">RAM</span>
+                        </div>
+
+                        <!-- Disk Storage -->
+                        <div class="gauge-item">
+                            <div class="gauge-circle" id="gauge-disk" style="--progress: 0;">
+                                <svg class="progress-ring" width="70" height="70">
+                                    <circle class="progress-ring__bg" stroke="rgba(255,255,255,0.06)" stroke-width="5" fill="transparent" r="28" cx="35" cy="35"/>
+                                    <circle class="progress-ring__circle" id="gauge-disk-circle" stroke="var(--disk-color)" stroke-width="5" fill="transparent" r="28" cx="35" cy="35"/>
+                                </svg>
+                                <span class="gauge-value" id="gauge-disk-val">0%</span>
+                            </div>
+                            <span class="gauge-label">Disk</span>
+                        </div>
+
+                        <!-- CPU Temperature -->
+                        <div class="gauge-item">
+                            <div class="gauge-circle" id="gauge-temp" style="--progress: 0;">
+                                <svg class="progress-ring" width="70" height="70">
+                                    <circle class="progress-ring__bg" stroke="rgba(255,255,255,0.06)" stroke-width="5" fill="transparent" r="28" cx="35" cy="35"/>
+                                    <circle class="progress-ring__circle" id="gauge-temp-circle" stroke="var(--temp-color)" stroke-width="5" fill="transparent" r="28" cx="35" cy="35"/>
+                                </svg>
+                                <span class="gauge-value" id="gauge-temp-val">—</span>
+                            </div>
+                            <span class="gauge-label">Nhiệt độ</span>
+                        </div>
+                    </div>
+
+                    <!-- Additional Details Text -->
+                    <div class="resources-details">
+                        <div>
+                            <span>CPU Freq:</span>
+                            <span id="sb-cpu-freq">—</span>
+                        </div>
+                        <div>
+                            <span>RAM Total:</span>
+                            <span id="sb-ram-total">—</span>
+                        </div>
+                        <div>
+                            <span>Disk Total:</span>
+                            <span id="sb-disk-total">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power controls widget -->
+                <div class="widget-card widget-card--controls">
+                    <button class="control-btn control-btn--reboot" id="btn-reboot" title="Khởi động lại Raspberry Pi">
+                        <svg class="control-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <use href="assets/icons/icons.svg#refresh-cw"></use>
+                        </svg>
+                        <span>Reboot</span>
+                    </button>
+                    <button class="control-btn control-btn--shutdown" id="btn-shutdown" title="Tắt Raspberry Pi">
+                        <svg class="control-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <use href="assets/icons/icons.svg#power"></use>
+                        </svg>
+                        <span>Shutdown</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Display Workspace -->
+            <main class="main-content" id="main-content" role="main">
+                <!-- Dynamic pages will render here -->
+            </main>
+        </div>
+    </div>
+
+    <!-- Global Toast Container -->
+    <div id="toast-container" aria-live="polite"></div>
+
+    <!-- ES Module App Entry -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

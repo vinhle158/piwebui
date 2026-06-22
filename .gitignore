@@ -1,0 +1,25 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+ENV/
+env/
+.env/
+
+# Environments and Secrets
+.env
+.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite3
+/var/lib/piwebui/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,58 @@
+/* Keyframes */
+@keyframes dot-pulse {
+    0% {
+        box-shadow: 0 0 0 0 hsla(142, 70%, 50%, 0.7);
+        transform: scale(0.95);
+    }
+    70% {
+        box-shadow: 0 0 0 6px hsla(142, 70%, 50%, 0);
+        transform: scale(1);
+    }
+    100% {
+        box-shadow: 0 0 0 0 hsla(142, 70%, 50%, 0);
+        transform: scale(0.95);
+    }
+}
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    from {
+        background-position: -200% 0;
+    }
+    to {
+        background-position: 200% 0;
+    }
+}
+
+/* Page Enter Animation */
+.page-enter {
+    animation: slide-up 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Status Dot Pulse */
+.status-dot--active {
+    animation: dot-pulse 2s infinite;
+}
+
+/* Skeleton Loading Shimmer */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--bg-elevated) 25%,
+        var(--bg-hover) 50%,
+        var(--bg-elevated) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+    border-radius: var(--r-sm);
+}

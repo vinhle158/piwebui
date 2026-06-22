@@ -1,0 +1,8 @@
+# /etc/sudoers.d/piwebui
+# Tạo file này, KHÔNG sửa /etc/sudoers trực tiếp
+pi ALL=(ALL) NOPASSWD: /bin/systemctl start *
+pi ALL=(ALL) NOPASSWD: /bin/systemctl stop *
+pi ALL=(ALL) NOPASSWD: /bin/systemctl restart *
+pi ALL=(ALL) NOPASSWD: /sbin/reboot
+pi ALL=(ALL) NOPASSWD: /sbin/shutdown
+pi ALL=(ALL) NOPASSWD: /usr/bin/wg show
