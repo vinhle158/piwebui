@@ -49,6 +49,13 @@ echo -e "${YELLOW}Step 4: Configuring sudoers for passwordless system control...
 # Copy sudoers file safely
 if [ -f "$PROJECT_ROOT/systemd/sudoers_piwebui" ]; then
     sudo cp "$PROJECT_ROOT/systemd/sudoers_piwebui" /etc/sudoers.d/piwebui
+    
+    # Adjust username if not running as user 'pi'
+    if [ "$USER" != "pi" ]; then
+        echo "Adjusting sudoers file for user: $USER"
+        sudo sed -i "s|^pi |$USER |g" /etc/sudoers.d/piwebui
+    fi
+    
     sudo chmod 440 /etc/sudoers.d/piwebui
     sudo chown root:root /etc/sudoers.d/piwebui
     
@@ -73,6 +80,13 @@ if [ -f "$PROJECT_ROOT/systemd/piwebui.service" ]; then
     if [ "$PROJECT_ROOT" != "/home/pi/piwebui" ]; then
         echo "Adjusting paths in systemd service file to point to $PROJECT_ROOT"
         sudo sed -i "s|/home/pi/piwebui|$PROJECT_ROOT|g" /etc/systemd/system/piwebui.service
+    fi
+    
+    # Adjust User and Group in systemd service file if user is not 'pi'
+    if [ "$USER" != "pi" ]; then
+        echo "Adjusting systemd service user and group to: $USER"
+        sudo sed -i "s|User=pi|User=$USER|g" /etc/systemd/system/piwebui.service
+        sudo sed -i "s|Group=pi|Group=$USER|g" /etc/systemd/system/piwebui.service
     fi
     
     sudo systemctl daemon-reload
